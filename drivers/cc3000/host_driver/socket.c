@@ -587,7 +587,7 @@ INT32 connect(INT32 sd, const sockaddr *addr, INT32 addrlen)
 //
 //*****************************************************************************
 
-INT16 select(INT32 nfds, fd_set *readsds, fd_set *writesds, fd_set *exceptsds, 
+INT16 select(INT32 nfds, cc3000_fd_set *readsds, cc3000_fd_set *writesds, cc3000_fd_set *exceptsds, 
 struct timeval *timeout)
 {
 	UINT8 *ptr, *args;
@@ -966,9 +966,11 @@ INT16 recvfrom(INT32 sd, void *buf, INT32 len, INT32 flags, sockaddr *from,
 INT16 simple_link_send(INT32 sd, const void *buf, INT32 len, INT32 flags,
 	const sockaddr *to, INT32 tolen, INT32 opcode)
 {    
-	UINT8 uArgSize,  addrlen;
-	UINT8 *ptr, *pDataPtr, *args;
-	UINT32 addr_offset;
+	UINT8 addrlen;
+    UINT8 uArgSize = 0;
+	UINT8 *ptr, *args;
+    UINT8 *pDataPtr = NULL;
+	UINT32 addr_offset = 0;
 	INT16 res;
 	tBsdReadReturnParams tSocketSendEvent;
 

@@ -215,7 +215,7 @@ typedef struct
 	UINT8	 InformHostOnTxComplete;
 }sSimplLinkInformation;
 
-extern volatile sSimplLinkInformation tSLInformation;
+volatile sSimplLinkInformation tSLInformation;
 
 
 //*****************************************************************************

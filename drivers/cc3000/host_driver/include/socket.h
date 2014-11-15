@@ -127,7 +127,7 @@ typedef struct _sockaddr_in_t
 
 typedef UINT32 socklen_t;
 
-// The fd_set member is required to be an array of INT32s.
+// The cc3000_fd_set member is required to be an array of INT32s.
 typedef INT32 __fd_mask;
 
 // It's easier to assume 8-bit bytes than to get CHAR_BIT.
@@ -135,21 +135,20 @@ typedef INT32 __fd_mask;
 #define __FDELT(d)              ((d) / __NFDBITS)
 #define __FDMASK(d)             ((__fd_mask) 1 << ((d) % __NFDBITS))
 
-// fd_set for select and pselect.
+// cc3000_fd_set for select and pselect.
 typedef struct
 {
     __fd_mask fds_bits[__FD_SETSIZE / __NFDBITS];
 #define __FDS_BITS(set)        ((set)->fds_bits)
 } cc3000_fd_set;
-#define fd_set  cc3000_fd_set
 
 // We don't use `memset' because this would require a prototype and
 //   the array isn't too big.
 #define __FD_ZERO(set)                               \
   do {                                                \
     UINT16 __i;                                 \
-    fd_set *__arr = (set);                            \
-    for (__i = 0; __i < sizeof (fd_set) / sizeof (__fd_mask); ++__i) \
+    cc3000_fd_set *__arr = (set);                            \
+    for (__i = 0; __i < sizeof (cc3000_fd_set) / sizeof (__fd_mask); ++__i) \
       __FDS_BITS (__arr)[__i] = 0;                    \
   } while (0)
 #define __FD_SET(d, set)       (__FDS_BITS (set)[__FDELT (d)] |= __FDMASK (d))
@@ -157,10 +156,10 @@ typedef struct
 #define __FD_ISSET(d, set)     (__FDS_BITS (set)[__FDELT (d)] & __FDMASK (d))
 
 // Access macros for 'fd_set'.
-#define FD_SET(fd, fdsetp)      __FD_SET (fd, fdsetp)
-#define FD_CLR(fd, fdsetp)      __FD_CLR (fd, fdsetp)
-#define FD_ISSET(fd, fdsetp)    __FD_ISSET (fd, fdsetp)
-#define FD_ZERO(fdsetp)         __FD_ZERO (fdsetp)
+#define CC3000_FD_SET(fd, fdsetp)      __FD_SET (fd, fdsetp)
+#define CC3000_FD_CLR(fd, fdsetp)      __FD_CLR (fd, fdsetp)
+#define CC3000_FD_ISSET(fd, fdsetp)    __FD_ISSET (fd, fdsetp)
+#define CC3000_FD_ZERO(fdsetp)         __FD_ZERO (fdsetp)
 
 //Use in case of Big Endian only
   
@@ -413,8 +412,8 @@ extern INT32 connect(INT32 sd, const sockaddr *addr, INT32 addrlen);
 //!  @sa socket
 //
 //*****************************************************************************
-extern INT16 select(INT32 nfds, fd_set *readsds, fd_set *writesds,
-                  fd_set *exceptsds, struct timeval *timeout);
+extern INT16 select(INT32 nfds, cc3000_fd_set *readsds, cc3000_fd_set *writesds,
+                  cc3000_fd_set *exceptsds, struct timeval *timeout);
 
 //*****************************************************************************
 //
