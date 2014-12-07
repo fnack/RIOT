@@ -49,7 +49,7 @@ static int _nomac_recv_cb(netdev_t *dev, void *src, size_t src_len, void *dest,
     msg_pkt.content.ptr = (char *)(&packet);
 
     for (unsigned int i = 0; i < NOMAC_REGISTRY_SIZE; i++) {
-        if (_nomac_registry[i].registrar_pid == current_pid) {
+        if (_nomac_registry[i].registrar_pid != KERNEL_PID_UNDEF) {
             offset = 0;
 
             while (offset < payload_len) {
