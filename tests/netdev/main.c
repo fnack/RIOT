@@ -956,6 +956,7 @@ int main(void)
 
     puts("\nRIOT netdev test");
     dev = NETDEV_DEFAULT;
+    main_pid = thread_getpid();
 
     if (dev == NULL) {
         puts("Default device was NULL");
@@ -1078,9 +1079,6 @@ int main(void)
     }
 
 #endif
-
-    main_pid = thread_getpid();
-    dev->driver->set_event_handler(dev, main_pid);
 
     while (1) {
         msg_receive(&msg);
