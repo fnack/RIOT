@@ -183,6 +183,8 @@ static void *_nomac_runner(void *args)
 
     msg_init_queue(msg_queue, NOMAC_MSG_QUEUE_SIZE);
 
+    dev->driver->init(dev);
+
     while (1) {
         msg_receive(&msg_cmd);
 
