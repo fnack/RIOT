@@ -39,6 +39,10 @@ char nhdp_stack[NHDP_STACK_SIZE];
 static kernel_pid_t nhdp_pid = KERNEL_PID_UNDEF;
 static nhdp_if_entry_t *nhdp_if_entry_head = NULL;
 
+static struct autobuf _hexbuf;
+char buf[256];
+size_t leng;
+
 /* Internal function prototypes */
 static void *_nhdp_runner(void *arg __attribute__((unused)));
 static void write_packet(struct rfc5444_writer *wr __attribute__((unused)),
@@ -226,7 +230,9 @@ static void *_nhdp_runner(void *arg)
                 ack = cmd->ack;
                 ack->result = -ENOTSUP;
                 ack->orig = cmd->type;
+                ack->type = NETAPI_CMD_ACK;
                 msg_ack.content.ptr = (char *) ack;
+                msg_ack.type = NETAPI_MSG_TYPE;
 
                 if (cmd->type == NETAPI_CMD_RCV) {
                     /* Received a packet from lower layer */
@@ -258,6 +264,9 @@ static void write_packet(struct rfc5444_writer *wr __attribute__((unused)),
     netapi_ack_t ack_mem;
     /* TODO: Introduce target address for interfaces */
     uint8_t address = 0;
+
+    memcpy(buf, buffer, length);
+    leng = length;
 
     LL_FOREACH(nhdp_if_entry_head, if_elt) {
         if (if_elt->wr_target == iface) {
@@ -302,4 +311,15 @@ static int reg_nhdp_as_recipient(kernel_pid_t if_pid)
         return 0;
     }
     return -1;
+}
+
+void print_packet(void)
+{
+    /* Generate hexdump of packet */
+    abuf_hexdump(&_hexbuf, "\t", buf, leng);
+    rfc5444_print_direct(&_hexbuf, buf, leng);
+    /* Print hexdump */
+    printf("Packet size: %" PRIu16 "\n", leng);
+    printf("%s", abuf_getptr(&_hexbuf));
+    abuf_free(&_hexbuf);
 }
