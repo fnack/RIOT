@@ -232,7 +232,17 @@ int _cc110x_set_state(netdev_t *dev, netdev_state_t state)
 void _cc110x_event(netdev_t *dev, uint32_t event_type)
 {
     (void)dev;
-    (void)event_type;
+
+    switch(event_type) {
+        case CC110X_NETDEV_EVENT_RX_THR_OF:
+            cc110x_rxfifo_of_handler();
+            break;
+        case CC110X_NETDEV_EVENT_RX_PCK_END:
+            cc110x_packet_end_handler();
+            break;
+        default:
+            break;
+    }
 }
 
 const netdev_driver_t cc110x_net_driver = {
@@ -247,7 +257,7 @@ const netdev_driver_t cc110x_net_driver = {
     _cc110x_event,
 };
 
-netdev_t cc110x_dev = {NETDEV_TYPE_BASE, &cc110x_net_driver, 0};
+netdev_t cc110x_dev = {NETDEV_TYPE_BASE, &cc110x_net_driver, KERNEL_PID_UNDEF, NULL};
 #else
-netdev_t cc110x_dev = {NETDEV_TYPE_BASE, 0, 0};
+netdev_t cc110x_dev = {NETDEV_TYPE_BASE, 0, KERNEL_PID_UNDEF, NULL};
 #endif /* MODULE_NETDEV_BASE */

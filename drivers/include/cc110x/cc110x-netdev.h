@@ -26,6 +26,15 @@ extern "C" {
 #endif
 
 /**
+ * @name    CC110X netdev event type macros
+ *
+ * @{
+ */
+#define CC110X_NETDEV_EVENT_RX_THR_OF  (11001)
+#define CC110X_NETDEV_EVENT_RX_PCK_END (11002)
+/** @} */
+
+/**
  * @brief   Implementation of netdev_driver_t for CC110X device
  */
 extern const netdev_driver_t cc110x_net_driver;

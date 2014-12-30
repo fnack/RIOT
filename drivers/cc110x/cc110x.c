@@ -25,6 +25,7 @@
 #include "hwtimer.h"
 #include "config.h"
 #include "cpu.h"
+#include "thread.h"
 #include "netdev/base.h"
 
 #define ENABLE_DEBUG    (0)
@@ -58,7 +59,7 @@ void cc110x_init(kernel_pid_t tpid)
 {
     transceiver_pid = tpid;
     DEBUG("Transceiver PID: %" PRIkernel_pid "\n", transceiver_pid);
-    cc110x_initialize(NULL); /* TODO */
+    cc110x_initialize(&cc110x_dev);
 }
 #endif
 
@@ -66,13 +67,17 @@ int cc110x_initialize(netdev_t *dev)
 {
     rx_buffer_next = 0;
 
+    dev->type = NETDEV_TYPE_BASE;
+    dev->more = NULL;
+    dev->event_handler = thread_getpid();
+
     /* Configure chip-select */
     gpio_init_out(CC110X_CS, GPIO_NOPULL);
     gpio_set(CC110X_CS);
     /* Configure GDO0, GDO1, GDO2 */
-    gpio_init_int(CC110X_GDO0, GPIO_PULLDOWN, GPIO_RISING, &rx_thr_irq_handler, 0);
+    gpio_init_int(CC110X_GDO0, GPIO_PULLDOWN, GPIO_RISING, &rx_thr_irq_handler, dev);
     gpio_init_in(CC110X_GDO1, GPIO_NOPULL);
-    gpio_init_int(CC110X_GDO2, GPIO_NOPULL, GPIO_FALLING, &rx_irq_handler, 0);
+    gpio_init_int(CC110X_GDO2, GPIO_NOPULL, GPIO_FALLING, &rx_irq_handler, dev);
     gpio_irq_disable(CC110X_GDO0);
     gpio_irq_disable(CC110X_GDO2);
 
@@ -397,10 +402,30 @@ static int rd_set_mode(int mode)
 
 static void rx_thr_irq_handler(void *args)
 {
+#ifdef MODULE_NETDEV_BASE
+    netdev_t *dev = (netdev_t*) args;
+    if (dev->event_handler != KERNEL_PID_UNDEF) {
+        msg_t msg;
+        msg.type = NETDEV_MSG_EVENT_TYPE;
+        msg.content.value = CC110X_NETDEV_EVENT_RX_THR_OF;
+        msg_send_int(&msg, dev->event_handler);
+    }
+#else
     cc110x_rxfifo_of_handler();
+#endif
 }
 
 static void rx_irq_handler(void *args)
 {
+#ifdef MODULE_NETDEV_BASE
+    netdev_t *dev = (netdev_t*) args;
+    if (dev->event_handler != KERNEL_PID_UNDEF) {
+        msg_t msg;
+        msg.type = NETDEV_MSG_EVENT_TYPE;
+        msg.content.value = CC110X_NETDEV_EVENT_RX_PCK_END;
+        msg_send_int(&msg, dev->event_handler);
+    }
+#else
     cc110x_packet_end_handler();
+#endif
 }

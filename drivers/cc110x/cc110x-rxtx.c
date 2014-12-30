@@ -249,7 +249,7 @@ void cc110x_packet_end_handler(void)
             cc110x_write_reg(CC1100_MCSM2, 0x07);   /* Configure RX_TIME (until end of packet) */
             cc110x_switch_to_rx();
 
-    #ifdef MODULE_TRANSCEIVER
+#ifdef MODULE_TRANSCEIVER
             /* notify transceiver thread if any */
             if (transceiver_pid != KERNEL_PID_UNDEF) {
                 msg_t m;
@@ -257,15 +257,15 @@ void cc110x_packet_end_handler(void)
                 m.content.value = rx_buffer_next;
                 msg_send_int(&m, transceiver_pid);
             }
-    #endif
+#endif
 
-    #ifdef MODULE_NETDEV_BASE
+#ifdef MODULE_NETDEV_BASE
             if (cc110x_recv_cb != NULL) {
                 cc110x_packet_t p = cc110x_rx_buffer[rx_buffer_next].packet;
                 cc110x_recv_cb(&cc110x_dev, &p.phy_src, sizeof(uint8_t), &p.address,
                         sizeof(uint8_t), p.data, p.length - CC1100_HEADER_LENGTH);
             }
-    #endif
+#endif
 
             /* shift to next buffer element */
             if (++rx_buffer_next == RX_BUF_SIZE) {
