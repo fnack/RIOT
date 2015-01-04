@@ -40,7 +40,7 @@
 //
 //*****************************************************************************
 
-#include "security.h"
+#include "cc3000/security.h"
 
 #ifndef CC3000_UNENCRYPTED_SMART_CONFIG
 // foreward sbox

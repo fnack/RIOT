@@ -43,13 +43,13 @@
 //                  INCLUDE FILES
 //******************************************************************************
 
-#include "cc3000_common.h"
+#include "cc3000/cc3000_common.h"
 #include "string.h"
-#include "hci.h"
-#include "evnt_handler.h"
-#include "wlan.h"
-#include "socket.h"
-#include "netapp.h"
+#include "cc3000/hci.h"
+#include "cc3000/evnt_handler.h"
+#include "cc3000/wlan.h"
+#include "cc3000/socket.h"
+#include "cc3000/netapp.h"
 #include "cc3000/cc3000_spi.h"
 
 

@@ -42,11 +42,11 @@
 
 #include <string.h>
 
-#include "cc3000_common.h"
-#include "hci.h"
+#include "cc3000/cc3000_common.h"
+#include "cc3000/hci.h"
 #include "cc3000/cc3000_spi.h"
-#include "evnt_handler.h"
-#include "wlan.h"
+#include "cc3000/evnt_handler.h"
+#include "cc3000/wlan.h"
 
 #define SL_PATCH_PORTION_SIZE		(1000)
 

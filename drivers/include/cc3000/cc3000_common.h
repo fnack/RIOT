@@ -36,6 +36,7 @@
 #define __COMMON_H__
 
 #include "data_types.h"
+#include "sys/time.h"
 
 //******************************************************************************
 // Include files
@@ -162,14 +163,6 @@ extern "C" {
 typedef INT32 time_t;
 typedef UINT32 clock_t;
 typedef INT32 suseconds_t;
-
-typedef struct timeval timeval;
-
-struct timeval 
-{
-    time_t         tv_sec;                  /* seconds */
-    suseconds_t    tv_usec;                 /* microseconds */
-};
 
 typedef CHAR *(*tFWPatches)(UINT32 *usLength);
 

@@ -43,10 +43,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "hci.h"
-#include "socket.h"
-#include "evnt_handler.h"
-#include "netapp.h"
+#include "cc3000/hci.h"
+#include "cc3000/socket.h"
+#include "cc3000/evnt_handler.h"
+#include "cc3000/netapp.h"
 
 
 

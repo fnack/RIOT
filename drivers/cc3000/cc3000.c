@@ -16,12 +16,13 @@
  * @}
  */
 
-#include "cc3000_common.h"
-#include "socket.h"
+#include "cc3000/cc3000_common.h"
+#include "cc3000/socket.h"
 #include "cc3000/cc3000_spi.h"
-#include "hci.h"
+#include "cc3000/hci.h"
 #include "hwtimer.h"
 #include "board.h"
+#include "vtimer.h"
 
 #include "periph/spi.h"
 #include "periph/gpio.h"
@@ -39,6 +40,7 @@ void cc3000_irq_handler(void *args)
 {
     unsigned short data_to_recv = 0;
     char tSpiReadHeader[] = {READ, 0, 0, 0, 0};
+    LED_GREEN_ON;
 
     /** No action, if interrupt pin was cleared before **/
     if (!tSLInformation.ReadWlanInterruptPin()) {
@@ -75,21 +77,21 @@ void cc3000_irq_handler(void *args)
 
 void init_CC3000_SPI(void)
 {
+    /** configure CS pin **/
+    gpio_init_out(CC3000_CS, GPIO_NOPULL);
+    /** chip select to high (not active) **/
+    gpio_set(CC3000_CS);
+
     /** configure CC3000 WLAN pin **/
-	gpio_init_out(CC3000_WLAN_EN, GPIO_PULLDOWN);
+	gpio_init_out(CC3000_WLAN_EN, GPIO_NOPULL);
     /** disable CC3000 WLAN for now **/
 	gpio_clear(CC3000_WLAN_EN);
-
-	/** configure CS pin **/
-	gpio_init_out(CC3000_CS, GPIO_PULLUP);
-	/** chip select to high (not active) **/
-	gpio_set(CC3000_CS);
 
 	/** initialize CC3000 SPI **/
 	spi_init_master(CC3000_SPI, SPI_CONF_SECOND_RISING, SPI_SPEED_10MHZ);
 
 	/** configure interrupt for CC3000 **/
-	gpio_init_int(CC3000_SPI_IRQ, GPIO_PULLUP, GPIO_FALLING, &cc3000_irq_handler, 0);
+	//gpio_init_int(CC3000_SPI_IRQ, GPIO_PULLUP, GPIO_FALLING, cc3000_irq_handler, 0);
 }
 
 void SpiOpen(gcSpiHandleRx pfRxHandler)
@@ -102,7 +104,15 @@ void SpiOpen(gcSpiHandleRx pfRxHandler)
 	sSpiInformation.usRxPacketLength = 0;
 	sSpiInformation.usTxPacketLength = 0;
 
-	init_CC3000_SPI();
+    gpio_clear(CC3000_WLAN_EN);
+    vtimer_usleep(1000000);
+    WlanInterruptEnable();
+    gpio_set(CC3000_WLAN_EN);
+
+    while(gpio_read(CC3000_SPI_IRQ) != 0) {
+        LED_RED_ON;
+    }
+    LED_RED_OFF;
 }
 
 void SpiClose(void)
@@ -189,6 +199,7 @@ void WlanInterruptEnable(void)
 {
     /** leaves room for optimization **/
     gpio_init_int(CC3000_SPI_IRQ, GPIO_PULLUP, GPIO_FALLING, &cc3000_irq_handler, 0);
+    //gpio_init_in(CC3000_SPI_IRQ, GPIO_PULLUP);
 }
 
 void WlanInterruptDisable(void)
