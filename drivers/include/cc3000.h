@@ -9,6 +9,6 @@
 #ifndef CC3000_H
 #define CC3000_H
 
-#include "cc3000/cc3000-spi.h"
+#include "cc3000/cc3000_spi.h"
 
 #endif /* CC3000_H */
