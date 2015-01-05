@@ -183,6 +183,7 @@ static void *_nomac_runner(void *args)
 
     msg_init_queue(msg_queue, NOMAC_MSG_QUEUE_SIZE);
 
+    dev->driver->init(dev);
     dev->driver->add_receive_data_callback(dev, _nomac_recv_cb);
 
     while (1) {
