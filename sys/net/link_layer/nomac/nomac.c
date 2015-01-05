@@ -68,11 +68,11 @@ static int _nomac_recv_cb(netdev_t *dev, void *src, size_t src_len, void *dest,
                         offset += (ack->result);
                     }
                     else {
-                        DEBUG("Error code received for registrar \"%s\" with "
-                              "recipient \"%s\": %d",
-                              thread_getname(_nomac_registry[i].registrar_pid),
-                              thread_getname(_nomac_registry[i].recipient_pid),
-                              -ack->result);
+                        DEBUG("Error code received for registrar %" PRIkernel_pid
+                              " with recipient %" PRIkernel_pid ": %d",
+                              _nomac_registry[i].registrar_pid,
+                              _nomac_registry[i].recipient_pid,
+                              -(ack->result));
 
                         return ack->result;
                     }
@@ -83,7 +83,7 @@ static int _nomac_recv_cb(netdev_t *dev, void *src, size_t src_len, void *dest,
                           "ack->type = %d, ack->orig = %d",
                           thread_getname(_nomac_registry[i].registrar_pid),
                           thread_getname(_nomac_registry[i].recipient_pid),
-                          msg_ack->type, ack->type, ack->orig);
+                          msg_ack.type, ack->type, ack->orig);
 
                     return -ENOMSG;
                 }
