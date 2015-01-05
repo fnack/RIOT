@@ -183,7 +183,7 @@ static void *_nomac_runner(void *args)
 
     msg_init_queue(msg_queue, NOMAC_MSG_QUEUE_SIZE);
 
-    dev->driver->init(dev);
+    dev->driver->add_receive_data_callback(dev, _nomac_recv_cb);
 
     while (1) {
         msg_receive(&msg_cmd);
@@ -285,8 +285,6 @@ void nomac_init_module(void)
 kernel_pid_t nomac_init(char *stack, int stacksize, char priority,
                         const char *name, netdev_t *dev)
 {
-    dev->driver->add_receive_data_callback(dev, _nomac_recv_cb);
-
     return thread_create(stack, stacksize, priority, CREATE_STACKTEST,
                          _nomac_runner, (void *)dev, name);
 }
