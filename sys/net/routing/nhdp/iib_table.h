@@ -23,6 +23,7 @@
 #include "kernel_types.h"
 
 #include "nib_table.h"
+#include "nhdp_metric.h"
 #include "nhdp_address.h"
 
 #ifdef __cplusplus
@@ -52,6 +53,22 @@ typedef struct iib_link_set_entry_t {
     timex_t exp_time;                           /**< Time at which entry expires */
     nib_entry_t* nb_elt;                        /**< Pointer to corresponding nb tuple */
     enum iib_link_tuple_status_t last_status;   /**< Last processed status of link tuple */
+    uint32_t metric_in;                         /**< Metric value for incoming link */
+    uint32_t metric_out;                        /**< Metric value for outgoing link */
+#if (NHDP_METRIC == NHDP_LMT_DAT)
+    uint8_t dat_received[NHDP_Q_MEM_LENGTH];    /**< Queue for containing sums of rcvd packets */
+    uint8_t dat_total[NHDP_Q_MEM_LENGTH];       /**< Queue for containing sums of xpctd packets */
+    timex_t dat_time;                           /**< Time next HELLO is expected */
+    uint8_t hello_interval;                     /**< Encoded HELLO interval value */
+    uint8_t lost_hellos;                        /**< Lost HELLO count after last received HELLO */
+    uint32_t rx_bitrate;                        /**< Incoming Bitrate for this link in Bit/s */
+    uint16_t last_seq_no;                       /**< The last received packet sequence number */
+#endif
+#if (NHDP_METRIC == NHDP_LMT_ETX)
+    uint8_t etx_received[NHDP_Q_MEM_LENGTH];    /**< Queue for containing sums of rcvd packets */
+    uint8_t etx_total[NHDP_Q_MEM_LENGTH];       /**< Queue for containing sums of xpctd packets */
+    uint16_t last_seq_no;                       /**< The last received packet sequence number */
+#endif
     struct iib_link_set_entry_t* next;          /**< Pointer to next list entry */
 } iib_link_set_entry_t;
 
@@ -62,6 +79,8 @@ typedef struct iib_two_hop_set_entry_t {
     struct iib_link_set_entry_t* ls_elt;        /**< Pointer to corresponding link tuple */
     nhdp_addr_t* th_nb_addr;                    /**< Address of symmetric 2-hop neighbor */
     timex_t exp_time;                           /**< Time at which entry expires */
+    uint32_t metric_in;                         /**< Metric value for incoming link */
+    uint32_t metric_out;                        /**< Metric value for outgoing link */
     struct iib_two_hop_set_entry_t* next;       /**< Pointer to next list entry */
 } iib_two_hop_set_entry_t;
 
@@ -89,7 +108,7 @@ typedef struct iib_base_entry_t {
 int iib_register_if(kernel_pid_t pid);
 
 /**
- * @brief                   Process a received HELLO message in the IIB
+ * @brief                   Process a received HELLO message in the IIB for link tuples
  *
  * @note
  * Must not be called from outside the NHDP reader's message processing.
@@ -97,18 +116,33 @@ int iib_register_if(kernel_pid_t pid);
  * @param[in] if_pid        PID of the interface the message was received on
  * @param[in] nb_elt        Pointer to the Neighbor Tuple for the message originator
  * @param[in] send_list     Pointer to the Sending Address List from the received HELLO
- * @param[in] th_sym_list   Pointer to the Addr List of the originator's symmetric 2-Hop neighbors
- * @param[in] th_rem_list   Pointer to the Addr List of the originator's lost 2-Hop neighbors
  * @param[in] rem_list      Pointer to the Removed Address List
  * @param[in] validity_time Validity time in milliseconds for the originator's information
  * @param[in] is_sym_nb     Flag whether the link to the originator is symmetric
  * @param[in] is_lost       Flag whether the originator marked this link as lost
  *
- * @return                  0 on success
+ * @return                  A pointer to the updated Link Tuple
  */
-int iib_process_hello(kernel_pid_t if_pid, nib_entry_t *nb_elt, nhdp_addr_entry_t *send_list,
-        nhdp_addr_entry_t *th_sym_list, nhdp_addr_entry_t *th_rem_list,
-        nhdp_addr_entry_t *rem_list, uint64_t validity_time, uint8_t is_sym_nb, uint8_t is_lost);
+iib_link_set_entry_t* iib_process_hello_lt(kernel_pid_t if_pid, nib_entry_t *nb_elt,
+        nhdp_addr_entry_t *send_list, nhdp_addr_entry_t *rem_list,
+        uint64_t validity_time, uint8_t is_sym_nb, uint8_t is_lost);
+
+/**
+ * @brief                   Process a received HELLO message in the IIB for 2 Hop Tuples
+ *
+ * @note
+ * Must not be called from outside the NHDP reader's message processing.
+ *
+ * @param[in] if_pid        PID of the interface the message was received on
+ * @param[in] validity_time Validity time in milliseconds for the originator's information
+ * @param[in] ls_elt        Pointer to the Link Tuple for the message originator
+ * @param[in] th_sym_list   Pointer to the Symmetric 2-Hop Address List from the received HELLO
+ * @param[in] th_rem_list   Pointer to the Lost 2-Hop Address List
+ * @param[in] metric_cont   Pointer to the metric list for the symmetric 2-hop addresses
+ */
+void iib_process_hello_th(kernel_pid_t if_pid, uint64_t validity_time,
+        iib_link_set_entry_t *ls_elt, nhdp_addr_entry_t *th_sym_list,
+        nhdp_addr_entry_t *th_rem_list, nhdp_addr_metr_t *metric_cont);
 
 /**
  * @brief                   Add addresses to the currently constructed HELLO message
@@ -141,6 +175,40 @@ void iib_update_lt_status(timex_t *now);
  * @param[in] new_entry     Pointer to the new corresponding Neighbor Tuple
  */
 void iib_propagate_nb_entry_change(nib_entry_t *old_entry, nib_entry_t *new_entry);
+
+/**
+ * @brief                   Process steps for the chosen NHDP metric for a message
+ *
+ * @note
+ * Must not be called from outside the NHDP reader's message processing.
+ *
+ * @param[in] ls_entry      Pointer to the Link Tuple that needs to be updated
+ * @param[in] int_time      Interval time in milliseconds for the originator's HELLO
+ * @param[in] seq_no        The sequence number from the received packet
+ */
+void iib_process_metric_msg(iib_link_set_entry_t *ls_entry, uint64_t int_time);
+
+/**
+ * @brief                   Process steps for the chosen NHDP metric for a packet
+ *
+ * @note
+ * Must not be called from outside the NHDP reader's packet processing.
+ *
+ * @param[in] ls_entry      Pointer to the Link Tuple that needs to be updated
+ * @param[in] metric_out    Metric value for outgoing link direction
+ * @param[in] seq_no        The sequence number from the received packet
+ */
+void iib_process_metric_pckt(iib_link_set_entry_t *ls_entry, uint32_t metric_out, uint16_t seq_no);
+
+/**
+ * @brief                   Update DAT metric values for all Link Tuples
+ */
+void iib_process_dat_refresh(void);
+
+/**
+ * @brief                   Update ETX metric values for all Link Tuples
+ */
+void iib_process_etx_refresh(void);
 
 #ifdef __cplusplus
 }

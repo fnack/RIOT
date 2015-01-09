@@ -39,11 +39,17 @@ char nhdp_stack[NHDP_STACK_SIZE];
 static kernel_pid_t nhdp_pid = KERNEL_PID_UNDEF;
 static nhdp_if_entry_t *nhdp_if_entry_head = NULL;
 
+#if (NHDP_METRIC != NHDP_LMT_HOP_COUNT)
+static vtimer_t metric_timer;
+static timex_t metric_interval;
+#endif
+
 /* Internal function prototypes */
 static void *_nhdp_runner(void *arg __attribute__((unused)));
 static void write_packet(struct rfc5444_writer *wr __attribute__((unused)),
                          struct rfc5444_writer_target *iface __attribute__((unused)),
                          void *buffer, size_t length);
+static void add_seqno(struct rfc5444_writer *writer, struct rfc5444_writer_target *rfc5444_target);
 static int reg_nhdp_as_recipient(kernel_pid_t if_pid);
 
 
@@ -68,6 +74,13 @@ kernel_pid_t nhdp_start(void)
     /* Start the NHDP thread */
     nhdp_pid = thread_create(nhdp_stack, NHDP_STACK_SIZE, PRIORITY_MAIN - 1,
             CREATE_STACKTEST, _nhdp_runner, NULL, "NHDP");
+
+#if (NHDP_METRIC != NHDP_LMT_HOP_COUNT)
+    if (nhdp_pid != KERNEL_PID_UNDEF) {
+        metric_interval = timex_from_uint64(DAT_REFRESH_INTERVAL * SEC_IN_USEC);
+        vtimer_set_msg(&metric_timer, metric_interval, nhdp_pid, NHDP_METRIC_TIMER, NULL);
+    }
+#endif
 
     return nhdp_pid;
 }
@@ -109,6 +122,7 @@ int nhdp_register_if(kernel_pid_t if_pid, uint8_t *addr, size_t addr_size,uint8_
     }
     if_entry->wr_target->packet_size = max_pl_size;
     if_entry->wr_target->sendPacket = write_packet;
+    if_entry->wr_target->addPacketHeader = add_seqno;
 
     /* Get NHDP address entry for the given address */
     nhdp_addr = nhdp_addr_db_get_address(addr, addr_size, addr_type);
@@ -129,6 +143,8 @@ int nhdp_register_if(kernel_pid_t if_pid, uint8_t *addr, size_t addr_size,uint8_
     if_entry->validity_time.microseconds = MS_IN_US * val_time_ms;
     timex_normalize(&if_entry->hello_interval);
     timex_normalize(&if_entry->validity_time);
+
+    if_entry->seq_no = 0;
 
     /* Add the interface to the LIB */
     if (lib_add_if_addr(if_entry->if_pid, nhdp_addr) != 0) {
@@ -237,6 +253,22 @@ static void *_nhdp_runner(void *arg)
                 }
                 msg_reply(&msg_rcvd, &msg_ack);
                 break;
+            case NHDP_METRIC_TIMER:
+#if (NHDP_METRIC == NHDP_LMT_DAT)
+                /* Process necessary metric computations */
+                iib_process_dat_refresh();
+                /* Schedule next sending */
+                vtimer_set_msg(&metric_timer, metric_interval,
+                        thread_getpid(), NHDP_METRIC_TIMER, NULL);
+#endif
+#if (NHDP_METRIC == NHDP_LMT_ETX)
+                /* Process necessary metric computations */
+                iib_process_etx_refresh();
+                /* Schedule next sending */
+                vtimer_set_msg(&metric_timer, metric_interval,
+                        thread_getpid(), NHDP_METRIC_TIMER, NULL);
+#endif
+                break;
             default:
                 break;
         }
@@ -277,6 +309,18 @@ static void write_packet(struct rfc5444_writer *wr __attribute__((unused)),
 
             msg_send_receive(&msg_pkt, &msg_ack, if_elt->if_pid);
             break;
+        }
+    }
+}
+
+static void add_seqno(struct rfc5444_writer *writer, struct rfc5444_writer_target *rfc5444_target)
+{
+    nhdp_if_entry_t *if_entry;
+    LL_FOREACH(nhdp_if_entry_head, if_entry) {
+        if (if_entry->wr_target == rfc5444_target) {
+            rfc5444_writer_set_pkt_header(writer, rfc5444_target, true);
+            rfc5444_writer_set_pkt_seqno(writer, rfc5444_target, ++if_entry->seq_no);
+            return;
         }
     }
 }
