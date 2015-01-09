@@ -36,13 +36,8 @@ static nhdp_addr_t *nhdp_addr_db_head = NULL;
 nhdp_addr_t* nhdp_addr_db_get_address(uint8_t *addr, size_t addr_size, uint8_t addr_type)
 {
     nhdp_addr_t *addr_elt;
-    uint8_t count;
 
     mutex_lock(&mtx_addr_access);
-
-    // TODO: Remove later
-    LL_COUNT(nhdp_addr_db_head, addr_elt, count);
-    printf("DB SIZE: %" PRIu8 "\n", count);
 
     LL_FOREACH(nhdp_addr_db_head, addr_elt) {
         if ((addr_elt->addr_size == addr_size) && (addr_elt->addr_type == addr_type)) {
@@ -87,7 +82,6 @@ nhdp_addr_t* nhdp_addr_db_get_address(uint8_t *addr, size_t addr_size, uint8_t a
 void nhdp_increment_addr_usage(nhdp_addr_t *addr)
 {
     addr->usg_count += 1;
-    printf("Usg count: %" PRIu8 " for %" PRIu8 "\n", addr->usg_count, addr->addr[0]);
 }
 
 void nhdp_decrement_addr_usage(nhdp_addr_t *addr)
@@ -97,10 +91,8 @@ void nhdp_decrement_addr_usage(nhdp_addr_t *addr)
     /* Decrement usage count and delete address if no longer used */
     if (addr) {
         addr->usg_count -= 1;
-        printf("Usg count: %" PRIu8 " for %" PRIu8 "\n", addr->usg_count, addr->addr[0]);
         if (addr->usg_count <= 0) {
             /* Free address space if address is no longer used */
-            printf("Removing addr\n");
             LL_DELETE(nhdp_addr_db_head, addr);
             free(addr->addr);
             free(addr);

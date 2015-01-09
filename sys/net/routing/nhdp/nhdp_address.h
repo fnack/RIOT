@@ -44,6 +44,15 @@ typedef struct nhdp_addr_entry_t {
 } nhdp_addr_entry_t;
 
 /**
+ * @brief   Container for NHDP address entries linked with a metric value in a list
+ */
+typedef struct nhdp_addr_metr_t {
+    struct nhdp_addr_entry_t* address;  /**< Pointer to addr entry element */
+    uint32_t metric_val;                /**< Metric val for this address element */
+    struct nhdp_addr_metr_t* next;      /**< Pointer to the next container */
+} nhdp_addr_metr_t;
+
+/**
  * @name
  *
  * @{
