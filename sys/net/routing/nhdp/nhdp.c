@@ -22,6 +22,7 @@
 #include "netapi.h"
 #include "thread.h"
 #include "utlist.h"
+#include "mutex.h"
 
 #include "rfc5444/rfc5444_writer.h"
 
@@ -34,6 +35,7 @@
 #include "nhdp_reader.h"
 
 char nhdp_stack[NHDP_STACK_SIZE];
+char nhdp_rcv_stack[NHDP_STACK_SIZE];
 
 /* Internal variables */
 static kernel_pid_t nhdp_pid = KERNEL_PID_UNDEF;
@@ -44,13 +46,24 @@ static vtimer_t metric_timer;
 static timex_t metric_interval;
 #endif
 
+static kernel_pid_t nhdp_rcv_pid = KERNEL_PID_UNDEF;
+static kernel_pid_t helper_pid = KERNEL_PID_UNDEF;
+static ipv6_addr_t _v6_addr_local;
+static mutex_t send_rcv_mutex = MUTEX_INIT;
+static sockaddr6_t sa_bcast;
+static int sock_rcv;
+
+static struct autobuf _hexbuf;
+char buf[256];
+size_t leng;
+
 /* Internal function prototypes */
 static void *_nhdp_runner(void *arg __attribute__((unused)));
+static void *_nhdp_receiver_thread(void *arg __attribute__((unused)));
 static void write_packet(struct rfc5444_writer *wr __attribute__((unused)),
                          struct rfc5444_writer_target *iface __attribute__((unused)),
                          void *buffer, size_t length);
 static void add_seqno(struct rfc5444_writer *writer, struct rfc5444_writer_target *rfc5444_target);
-static int reg_nhdp_as_recipient(kernel_pid_t if_pid);
 
 
 /*---------------------------------------------------------------------------*
@@ -71,6 +84,15 @@ void nhdp_init(void)
 
 kernel_pid_t nhdp_start(void)
 {
+    /* init multicast address: set to to a link-local all nodes multicast address */
+    sa_bcast.sin6_family = AF_INET6;
+    sa_bcast.sin6_port = HTONS(269);
+    ipv6_addr_set_all_nodes_addr(&sa_bcast.sin6_addr);
+    /* get best IP for sending */
+    ipv6_net_if_get_best_src_addr(&_v6_addr_local, &sa_bcast.sin6_addr);
+
+    sock_rcv = socket_base_socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+
     /* Start the NHDP thread */
     nhdp_pid = thread_create(nhdp_stack, NHDP_STACK_SIZE, PRIORITY_MAIN - 1,
             CREATE_STACKTEST, _nhdp_runner, NULL, "NHDP");
@@ -167,9 +189,11 @@ int nhdp_register_if(kernel_pid_t if_pid, uint8_t *addr, size_t addr_size,uint8_
 
     /* Everything went well */
     nhdp_decrement_addr_usage(nhdp_addr);
-    reg_nhdp_as_recipient(if_entry->if_pid);
     nhdp_writer_register_if(if_entry->wr_target);
     LL_PREPEND(nhdp_if_entry_head, if_entry);
+
+    nhdp_rcv_pid = thread_create(nhdp_rcv_stack, sizeof(nhdp_rcv_stack), PRIORITY_MAIN - 1,
+            CREATE_STACKTEST, _nhdp_receiver_thread, NULL, "nhdp_rcv_thread");
 
     /* Start sending periodic HELLO */
     signal_msg.type = MSG_TIMER;
@@ -226,6 +250,7 @@ static void *_nhdp_runner(void *arg)
 
         switch (msg_rcvd.type) {
             case MSG_TIMER:
+                mutex_lock(&send_rcv_mutex);
                 if_entry = (nhdp_if_entry_t*) msg_rcvd.content.ptr;
 
                 nhdp_writer_send_hello(if_entry);
@@ -235,6 +260,7 @@ static void *_nhdp_runner(void *arg)
                 /* Schedule next sending */
                 vtimer_set_msg(&if_entry->if_timer, if_entry->hello_interval,
                         thread_getpid(), MSG_TIMER, (void*) if_entry);
+                mutex_unlock(&send_rcv_mutex);
                 break;
             case NETAPI_MSG_TYPE:
                 /* Received msg from lower layer */
@@ -254,6 +280,7 @@ static void *_nhdp_runner(void *arg)
                 msg_reply(&msg_rcvd, &msg_ack);
                 break;
             case NHDP_METRIC_TIMER:
+                mutex_lock(&send_rcv_mutex);
 #if (NHDP_METRIC == NHDP_LMT_DAT)
                 /* Process necessary metric computations */
                 iib_process_dat_refresh();
@@ -268,12 +295,46 @@ static void *_nhdp_runner(void *arg)
                 vtimer_set_msg(&metric_timer, metric_interval,
                         thread_getpid(), NHDP_METRIC_TIMER, NULL);
 #endif
+                mutex_unlock(&send_rcv_mutex);
                 break;
             default:
                 break;
         }
     }
     return 0;
+}
+
+/* Receive HELLOs and handle them */
+static void *_nhdp_receiver_thread(void *arg __attribute__((unused)))
+{
+    uint32_t fromlen;
+    char nhdp_rcv_buf[128];
+    msg_t msg_q[NHDP_MSG_QUEUE_SIZE];
+
+    msg_init_queue(msg_q, NHDP_MSG_QUEUE_SIZE);
+
+    sockaddr6_t sa_rcv = { .sin6_family = AF_INET6,
+                           .sin6_port = HTONS(269) // MANET_PORT
+                         };
+
+    if (-1 == socket_base_bind(sock_rcv, &sa_rcv, sizeof(sa_rcv))) {
+        socket_base_close(sock_rcv);
+    }
+
+    while (1) {
+        int32_t rcv_size = socket_base_recvfrom(sock_rcv, (void *)nhdp_rcv_buf, 128, 0,
+                                        &sa_rcv, &fromlen);
+
+        if (rcv_size > 0) {
+            mutex_lock(&send_rcv_mutex);
+            nhdp_reader_handle_packet(helper_pid, (void *) nhdp_rcv_buf, rcv_size);
+            mutex_unlock(&send_rcv_mutex);
+        }
+    }
+
+    socket_base_close(sock_rcv);
+
+    return NULL;
 }
 
 /**
@@ -284,33 +345,9 @@ static void write_packet(struct rfc5444_writer *wr __attribute__((unused)),
                          struct rfc5444_writer_target *iface __attribute__((unused)),
                          void *buffer, size_t length)
 {
-    nhdp_if_entry_t *if_elt;
-    msg_t msg_pkt, msg_ack;
-    netapi_snd_pkt_t packet;
-    netapi_ack_t ack_mem;
-    /* TODO: Introduce target address for interfaces */
-    uint8_t address = 0;
-
-    LL_FOREACH(nhdp_if_entry_head, if_elt) {
-        if (if_elt->wr_target == iface) {
-            /* Use netapi to forward packet to lower layer */
-            packet.type = NETAPI_CMD_SND;
-            packet.ulh = NULL;
-            packet.ack = &ack_mem;
-
-            /* TODO: Introduce target address for interfaces */
-            packet.dest = &address;
-            packet.dest_len = 1;
-
-            packet.data = buffer;
-            packet.data_len = length;
-            msg_pkt.type = NETAPI_MSG_TYPE;
-            msg_pkt.content.ptr = (char *)(&packet);
-
-            msg_send_receive(&msg_pkt, &msg_ack, if_elt->if_pid);
-            break;
-        }
-    }
+    memcpy(buf, buffer, length);
+    leng = length;
+    socket_base_sendto(sock_rcv, buffer, length, 0, &sa_bcast, sizeof(sa_bcast));
 }
 
 static void add_seqno(struct rfc5444_writer *writer, struct rfc5444_writer_target *rfc5444_target)
@@ -325,25 +362,13 @@ static void add_seqno(struct rfc5444_writer *writer, struct rfc5444_writer_targe
     }
 }
 
-/**
- * Send netapi message to register NHDP as upper layer recipient for the given interface
- */
-static int reg_nhdp_as_recipient(kernel_pid_t if_pid)
+void print_packet(void)
 {
-    msg_t reg_msg, ack_msg;
-    netapi_reg_t reg_cmd;
-    netapi_ack_t reg_ack;
-
-    /* Register NHDP as recipient for lower layer using netapi */
-    reg_msg.type = NETAPI_MSG_TYPE;
-    reg_cmd.reg_pid = nhdp_pid;
-    reg_cmd.ack = &reg_ack;
-    reg_cmd.type = NETAPI_CMD_REG;
-    reg_msg.content.ptr = (char*) (&reg_cmd);
-
-    msg_send_receive(&reg_msg, &ack_msg, if_pid);
-    if ((reg_ack.type == NETAPI_CMD_ACK) && (reg_ack.orig = NETAPI_CMD_REG)) {
-        return 0;
-    }
-    return -1;
+    /* Generate hexdump of packet */
+    abuf_hexdump(&_hexbuf, "\t", buf, leng);
+    rfc5444_print_direct(&_hexbuf, buf, leng);
+    /* Print hexdump */
+    printf("Packet size: %" PRIu16 "\n", leng);
+    printf("%s", abuf_getptr(&_hexbuf));
+    abuf_free(&_hexbuf);
 }

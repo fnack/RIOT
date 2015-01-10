@@ -32,10 +32,10 @@
 #include "netdev/base.h"
 
 #ifndef RX_BUF_SIZE
-#define RX_BUF_SIZE (10)
+#define RX_BUF_SIZE (30)
 #endif
 #ifndef TRANSCEIVER_BUFFER_SIZE
-#define TRANSCEIVER_BUFFER_SIZE (10)
+#define TRANSCEIVER_BUFFER_SIZE (30)
 #endif
 
 /**

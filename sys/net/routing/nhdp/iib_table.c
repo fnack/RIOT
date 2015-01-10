@@ -454,7 +454,6 @@ void iib_process_dat_refresh(void)
 {
     iib_base_entry_t *base_elt;
     iib_link_set_entry_t *ls_elt;
-    iib_two_hop_set_entry_t *th_elt;
     uint32_t metric_temp;
     double sum_total, sum_rcvd, loss;
 
@@ -518,11 +517,6 @@ void iib_process_dat_refresh(void)
             queue_rem(ls_elt->dat_received);
             queue_rem(ls_elt->dat_total);
         }
-
-        LL_FOREACH(base_elt->two_hop_set_head, th_elt) {
-            printf("TH Addr: %"PRIu8" with %"PRIu32":%"PRIu32"\n", th_elt->th_nb_addr->addr[0],
-                    th_elt->metric_in, th_elt->metric_out);
-        }
     }
 }
 #endif
@@ -575,11 +569,6 @@ void iib_process_etx_refresh(void)
 
             queue_rem(ls_elt->etx_received);
             queue_rem(ls_elt->etx_total);
-        }
-
-        LL_FOREACH(base_elt->two_hop_set_head, th_elt) {
-            printf("TH Addr: %"PRIu8" with %"PRIu32":%"PRIu32"\n", th_elt->th_nb_addr->addr[0],
-                    th_elt->metric_in, th_elt->metric_out);
         }
     }
 }
