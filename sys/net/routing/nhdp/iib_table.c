@@ -322,8 +322,8 @@ static iib_link_set_entry_t* update_link_set(iib_base_entry_t *base_entry, nib_e
         }
     }
 
-    v_time = timex_from_uint64(val_time * MS_IN_US);
-    l_hold = timex_from_uint64(((uint64_t)NHDP_L_HOLD_TIME_MS) * MS_IN_US);
+    v_time = timex_from_uint64(val_time * MS_IN_USEC);
+    l_hold = timex_from_uint64(((uint64_t)NHDP_L_HOLD_TIME_MS) * MS_IN_USEC);
 
     /* Set Sending Address List as this tuples address list */
     matching_lt->address_list_head = nhdp_generate_new_addr_list(send_list);
@@ -420,7 +420,7 @@ static iib_link_set_entry_t* add_default_link_set_entry(iib_base_entry_t *base_e
         uint64_t val_time)
 {
     iib_link_set_entry_t *new_entry;
-    timex_t v_time = timex_from_uint64(val_time * MS_IN_US);
+    timex_t v_time = timex_from_uint64(val_time * MS_IN_USEC);
 
     new_entry = (iib_link_set_entry_t*) malloc(sizeof(iib_link_set_entry_t));
     if (!new_entry) {
@@ -448,7 +448,7 @@ static iib_link_set_entry_t* add_default_link_set_entry(iib_base_entry_t *base_e
  */
 static void reset_link_set_entry(iib_link_set_entry_t *ls_entry, timex_t *now, uint64_t val_time)
 {
-    timex_t v_time = timex_from_uint64(val_time * MS_IN_US);
+    timex_t v_time = timex_from_uint64(val_time * MS_IN_USEC);
 
     release_link_tuple_addresses(ls_entry);
     ls_entry->exp_time.microseconds = 0;
@@ -565,7 +565,7 @@ static int add_two_hop_entry(iib_base_entry_t *base_entry, iib_link_set_entry_t 
         nhdp_addr_t *th_addr, timex_t *now, uint64_t val_time)
 {
     iib_two_hop_set_entry_t *new_entry;
-    timex_t v_time = timex_from_uint64(val_time * MS_IN_US);
+    timex_t v_time = timex_from_uint64(val_time * MS_IN_USEC);
 
     new_entry = (iib_two_hop_set_entry_t*) malloc(sizeof(iib_two_hop_set_entry_t));
     if (!new_entry) {

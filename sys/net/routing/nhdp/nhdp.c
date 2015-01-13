@@ -124,9 +124,9 @@ int nhdp_register_if(kernel_pid_t if_pid, uint8_t *addr, size_t addr_size,uint8_
     if_entry->if_pid = if_pid;
     /* Set HELLO_INTERVAL and H_HOLD_TIME (validity time) */
     if_entry->hello_interval.seconds = 0;
-    if_entry->hello_interval.microseconds = MS_IN_US * hello_int_ms;
+    if_entry->hello_interval.microseconds = MS_IN_USEC * hello_int_ms;
     if_entry->validity_time.seconds = 0;
-    if_entry->validity_time.microseconds = MS_IN_US * val_time_ms;
+    if_entry->validity_time.microseconds = MS_IN_USEC * val_time_ms;
     timex_normalize(&if_entry->hello_interval);
     timex_normalize(&if_entry->validity_time);
 
