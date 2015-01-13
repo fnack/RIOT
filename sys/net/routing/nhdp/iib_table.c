@@ -63,7 +63,7 @@ static void sec_thirteen_two(iib_base_entry_t *base_entry,
         iib_link_set_entry_t *ls_entry, timex_t *now);
 static void sec_thirteen_three(iib_link_set_entry_t *ls_entry, timex_t *now);
 
-static timex_t get_max_timex(timex_t time_one, timex_t time_two);
+static inline timex_t get_max_timex(timex_t time_one, timex_t time_two);
 static iib_link_tuple_status_t get_tuple_status(iib_link_set_entry_t *ls_entry, timex_t *now);
 
 
@@ -689,7 +689,7 @@ static iib_link_tuple_status_t get_tuple_status(iib_link_set_entry_t *ls_entry, 
 /**
  * Get the later one of two timex representation
  */
-static timex_t get_max_timex(timex_t time_one, timex_t time_two)
+static inline timex_t get_max_timex(timex_t time_one, timex_t time_two)
 {
     if (timex_cmp(time_one, time_two) != -1) {
         return time_one;
