@@ -44,9 +44,9 @@ typedef enum iib_link_tuple_status_t {
  * @brief   Link Set entry (link tuple)
  */
 typedef struct iib_link_set_entry_t {
-    nhdp_addr_entry_t *address_list_head;       /**< Pointer to head of this lt's addresses */
-    timex_t heard_time;                         /**< Time at which entry loses heard status */
-    timex_t sym_time;                           /**< Time at which entry loses symmetry status */
+    nhdp_addr_entry_t *address_list_head;       /**< Pointer to head of this tuple's addresses */
+    timex_t heard_time;                         /**< Time at which entry leaves heard status */
+    timex_t sym_time;                           /**< Time at which entry leaves symmetry status */
     uint8_t pending;                            /**< Flag whether link is pending */
     uint8_t lost;                               /**< Flag whether link is lost */
     timex_t exp_time;                           /**< Time at which entry expires */

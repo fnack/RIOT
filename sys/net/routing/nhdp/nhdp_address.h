@@ -44,7 +44,7 @@ typedef struct nhdp_addr_entry_t {
 } nhdp_addr_entry_t;
 
 /**
- * @name
+ * @name    NHDP address temp usage helper macros
  *
  * @{
  */
