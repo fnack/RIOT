@@ -52,19 +52,21 @@ static void rem_ln_entry(nib_lost_address_entry_t *ln_entry);
 
 nib_entry_t* nib_process_hello(nhdp_addr_entry_t *nb_list, nhdp_addr_entry_t **out_list)
 {
-    nib_entry_t *nib_elt, *nib_tmp;
     nib_entry_t *nb_match = NULL;
-    nhdp_addr_entry_t *list_elt, *list_elt2;
     timex_t now;
     uint8_t matches = 0;
 
     mutex_lock(&mtx_nib_access);
 
     if (nb_list) {
+        nib_entry_t *nib_elt, *nib_tmp;
+
         vtimer_now(&now);
 
         LL_FOREACH_SAFE(nib_entry_head, nib_elt, nib_tmp) {
+            nhdp_addr_entry_t *list_elt;
             LL_FOREACH(nib_elt->address_list_head, list_elt) {
+                nhdp_addr_entry_t *list_elt2;
                 LL_FOREACH(nb_list, list_elt2) {
                     if (list_elt->address == list_elt2->address) {
                         /* Addresses are equal (same NHDP address db entry) */

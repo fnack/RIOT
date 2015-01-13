@@ -114,11 +114,11 @@ void nhdp_free_addr_entry(nhdp_addr_entry_t *addr_entry)
 
 nhdp_addr_entry_t* nhdp_generate_new_addr_list(nhdp_addr_entry_t *orig_list)
 {
-    nhdp_addr_entry_t *new_list_head, *new_entry, *addr_elt;
+    nhdp_addr_entry_t *new_list_head, *addr_elt;
 
     new_list_head = NULL;
     LL_FOREACH(orig_list, addr_elt) {
-        new_entry = (nhdp_addr_entry_t*) malloc(sizeof(nhdp_addr_entry_t));
+        nhdp_addr_entry_t *new_entry = (nhdp_addr_entry_t*) malloc(sizeof(nhdp_addr_entry_t));
         if (!new_entry) {
             /* Insufficient memory, free all previously allocated memory */
             nhdp_free_addr_list(new_list_head);

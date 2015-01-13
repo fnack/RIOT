@@ -145,7 +145,6 @@ static enum rfc5444_result
 _nhdp_blocktlv_address_cb(struct rfc5444_reader_tlvblock_context *cont)
 {
     uint8_t tmp_result;
-    nhdp_addr_entry_t *sec_container;
     /* Create address list entry to add it later to one of the temp address lists */
     nhdp_addr_entry_t *current_addr = (nhdp_addr_entry_t*) malloc(sizeof(nhdp_addr_entry_t));
     if (!current_addr) {
@@ -173,7 +172,8 @@ _nhdp_blocktlv_address_cb(struct rfc5444_reader_tlvblock_context *cont)
             case RFC5444_LOCALIF_THIS_IF:
                 LL_PREPEND(send_addr_list_head, current_addr);
                 /* Local IF marked addresses have to be added to two temp lists */
-                sec_container = (nhdp_addr_entry_t*) malloc(sizeof(nhdp_addr_entry_t));
+                nhdp_addr_entry_t *sec_container =
+                        (nhdp_addr_entry_t*) malloc(sizeof(nhdp_addr_entry_t));
                 if (!sec_container) {
                     return RFC5444_DROP_MESSAGE;
                 }
