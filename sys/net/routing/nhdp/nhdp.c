@@ -66,7 +66,7 @@ void nhdp_init(void)
 kernel_pid_t nhdp_start(void)
 {
     /* Start the NHDP thread */
-    nhdp_pid = thread_create(nhdp_stack, NHDP_STACK_SIZE, PRIORITY_MAIN - 1,
+    nhdp_pid = thread_create(nhdp_stack, sizeof(nhdp_stack), PRIORITY_MAIN - 1,
             CREATE_STACKTEST, _nhdp_runner, NULL, "NHDP");
 
     return nhdp_pid;
