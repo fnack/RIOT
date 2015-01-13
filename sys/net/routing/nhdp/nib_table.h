@@ -33,18 +33,18 @@ extern "C" {
  * @brief   Neighbor Set entry (neighbor tuple)
  */
 typedef struct nib_entry_t {
-    nhdp_addr_entry_t* address_list_head;   /**< Pointer to this nt's addresses*/
+    nhdp_addr_entry_t *address_list_head;   /**< Pointer to this nt's addresses*/
     uint8_t symmetric;                      /**< Flag whether sym link to this nb exists */
-    struct nib_entry_t* next;               /**< Pointer to next list entry */
+    struct nib_entry_t *next;               /**< Pointer to next list entry */
 } nib_entry_t;
 
 /**
  * @brief   Lost Neighbor Set entry (lost neighbor tuple)
  */
 typedef struct nib_lost_address_entry_t {
-    nhdp_addr_t* address;                   /**< Pointer to address represented by this lost nt */
+    nhdp_addr_t *address;                   /**< Pointer to address represented by this lost nt */
     timex_t expiration_time;                /**< Time at which entry expires */
-    struct nib_lost_address_entry_t* next;  /**< Pointer to next list entry */
+    struct nib_lost_address_entry_t *next;  /**< Pointer to next list entry */
 } nib_lost_address_entry_t;
 
 /**

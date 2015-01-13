@@ -44,25 +44,25 @@ typedef enum iib_link_tuple_status_t {
  * @brief   Link Set entry (link tuple)
  */
 typedef struct iib_link_set_entry_t {
-    nhdp_addr_entry_t* address_list_head;       /**< Pointer to head of this lt's addresses */
+    nhdp_addr_entry_t *address_list_head;       /**< Pointer to head of this lt's addresses */
     timex_t heard_time;                         /**< Time at which entry loses heard status */
     timex_t sym_time;                           /**< Time at which entry loses symmetry status */
     uint8_t pending;                            /**< Flag whether link is pending */
     uint8_t lost;                               /**< Flag whether link is lost */
     timex_t exp_time;                           /**< Time at which entry expires */
-    nib_entry_t* nb_elt;                        /**< Pointer to corresponding nb tuple */
+    nib_entry_t *nb_elt;                        /**< Pointer to corresponding nb tuple */
     enum iib_link_tuple_status_t last_status;   /**< Last processed status of link tuple */
-    struct iib_link_set_entry_t* next;          /**< Pointer to next list entry */
+    struct iib_link_set_entry_t *next;          /**< Pointer to next list entry */
 } iib_link_set_entry_t;
 
 /**
  * @brief   2-Hop Set entry (2-Hop tuple)
  */
 typedef struct iib_two_hop_set_entry_t {
-    struct iib_link_set_entry_t* ls_elt;        /**< Pointer to corresponding link tuple */
-    nhdp_addr_t* th_nb_addr;                    /**< Address of symmetric 2-hop neighbor */
+    struct iib_link_set_entry_t *ls_elt;        /**< Pointer to corresponding link tuple */
+    nhdp_addr_t *th_nb_addr;                    /**< Address of symmetric 2-hop neighbor */
     timex_t exp_time;                           /**< Time at which entry expires */
-    struct iib_two_hop_set_entry_t* next;       /**< Pointer to next list entry */
+    struct iib_two_hop_set_entry_t *next;       /**< Pointer to next list entry */
 } iib_two_hop_set_entry_t;
 
 /**
@@ -70,9 +70,9 @@ typedef struct iib_two_hop_set_entry_t {
  */
 typedef struct iib_base_entry_t {
     kernel_pid_t if_pid;                                /**< PID of the interface */
-    struct iib_link_set_entry_t* link_set_head;         /**< Pointer to this if's link tuples */
-    struct iib_two_hop_set_entry_t* two_hop_set_head;   /**< Pointer to this if's 2-hop tuples */
-    struct iib_base_entry_t* next;                      /**< Pointer to next list entry */
+    struct iib_link_set_entry_t *link_set_head;         /**< Pointer to this if's link tuples */
+    struct iib_two_hop_set_entry_t *two_hop_set_head;   /**< Pointer to this if's 2-hop tuples */
+    struct iib_base_entry_t *next;                      /**< Pointer to next list entry */
 } iib_base_entry_t;
 
 /**
