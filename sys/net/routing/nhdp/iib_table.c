@@ -453,8 +453,8 @@ static void reset_link_set_entry(iib_link_set_entry_t *ls_entry, timex_t *now, u
     timex_t v_time = timex_from_uint64(val_time * MS_IN_USEC);
 
     release_link_tuple_addresses(ls_entry);
-    ls_entry->exp_time.microseconds = 0;
-    ls_entry->exp_time.seconds = 0;
+    ls_entry->sym_time.microseconds = 0;
+    ls_entry->sym_time.seconds = 0;
     ls_entry->heard_time.microseconds = 0;
     ls_entry->heard_time.seconds = 0;
     ls_entry->pending = NHDP_INITIAL_PENDING;
