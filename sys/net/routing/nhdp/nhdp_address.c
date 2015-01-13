@@ -72,16 +72,11 @@ nhdp_addr_t* nhdp_addr_db_get_address(uint8_t *addr, size_t addr_size, uint8_t a
         LL_PREPEND(nhdp_addr_db_head, addr_elt);
     }
 
-    nhdp_increment_addr_usage(addr_elt);
+    addr_elt->usg_count++;
 
     mutex_unlock(&mtx_addr_access);
     
     return addr_elt;
-}
-
-void nhdp_increment_addr_usage(nhdp_addr_t *addr)
-{
-    addr->usg_count += 1;
 }
 
 void nhdp_decrement_addr_usage(nhdp_addr_t *addr)
@@ -130,7 +125,8 @@ nhdp_addr_entry_t* nhdp_generate_new_addr_list(nhdp_addr_entry_t *orig_list)
             return NULL;
         }
         new_entry->address = addr_elt->address;
-        nhdp_increment_addr_usage(addr_elt->address);
+        /* Increment usage counter of address in central NHDP address storage */
+        addr_elt->address->usg_count++;
         LL_PREPEND(new_list_head, new_entry);
     }
 

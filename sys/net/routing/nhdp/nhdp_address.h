@@ -69,13 +69,6 @@ typedef struct nhdp_addr_entry_t {
 nhdp_addr_t* nhdp_addr_db_get_address(uint8_t *addr, size_t addr_size, uint8_t addr_type);
 
 /**
- * @brief                   Increment the usage counter of a given NHDP address
- *
- * @param[in] addr          Pointer to the NHDP address
- */
-void nhdp_increment_addr_usage(nhdp_addr_t *addr);
-
-/**
  * @brief                   Decrement the usage counter of a given NHDP address
  *
  * The NHDP address is deleted if the usage counter reaches zero.

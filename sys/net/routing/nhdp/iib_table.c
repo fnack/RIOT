@@ -573,7 +573,8 @@ static int add_two_hop_entry(iib_base_entry_t *base_entry, iib_link_set_entry_t 
         return -1;
     }
 
-    nhdp_increment_addr_usage(th_addr);
+    /* Increment usage counter of address in central NHDP address storage */
+    th_addr->usg_count++;
     new_entry->th_nb_addr = th_addr;
     new_entry->ls_elt = ls_entry;
     new_entry->exp_time = timex_add(*now, v_time);

@@ -292,7 +292,8 @@ static int add_lost_neighbor_address(nhdp_addr_t *lost_addr, timex_t *now)
         /* Insufficient memory */
         return -1;
     }
-    nhdp_increment_addr_usage(lost_addr);
+    /* Increment usage counter of address in central NHDP address storage */
+    lost_addr->usg_count++;
     elt->address = lost_addr;
     elt->expiration_time = timex_add(*now, n_hold);
     LL_PREPEND(nib_lost_address_entry_head, elt);

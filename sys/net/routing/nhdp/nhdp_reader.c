@@ -177,7 +177,8 @@ _nhdp_blocktlv_address_cb(struct rfc5444_reader_tlvblock_context *cont)
                 if (!sec_container) {
                     return RFC5444_DROP_MESSAGE;
                 }
-                nhdp_increment_addr_usage(current_addr->address);
+                /* Increment usage counter of address in central NHDP address storage */
+                current_addr->address->usg_count++;
                 sec_container->address = current_addr->address;
                 LL_PREPEND(nb_addr_list_head, sec_container);
                 break;

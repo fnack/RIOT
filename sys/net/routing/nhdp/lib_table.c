@@ -193,7 +193,8 @@ static int add_address_to_if(lib_entry_t *if_entry, nhdp_addr_t *addr)
         /* Insufficient memory */
         return -1;
     }
-    nhdp_increment_addr_usage(addr);
+    /* Increment usage counter of address in central NHDP address storage */
+    addr->usg_count++;
     new_entry->address = addr;
     LL_PREPEND(if_entry->if_addr_list_head, new_entry);
     
