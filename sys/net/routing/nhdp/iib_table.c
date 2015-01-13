@@ -58,10 +58,9 @@ static void rem_two_hop_entry(iib_base_entry_t *base_entry, iib_two_hop_set_entr
 
 static void wr_update_ls_status(iib_base_entry_t *base_entry,
         iib_link_set_entry_t *ls_elt, timex_t *now);
-static void sec_thirteen_one(iib_link_set_entry_t *ls_entry);
-static void sec_thirteen_two(iib_base_entry_t *base_entry,
+static void update_nb_tuple_symmetry(iib_base_entry_t *base_entry,
         iib_link_set_entry_t *ls_entry, timex_t *now);
-static void sec_thirteen_three(iib_link_set_entry_t *ls_entry, timex_t *now);
+static void rem_not_heard_nb_tuple(iib_link_set_entry_t *ls_entry, timex_t *now);
 
 static inline timex_t get_max_timex(timex_t time_one, timex_t time_two);
 static iib_link_tuple_status_t get_tuple_status(iib_link_set_entry_t *ls_entry, timex_t *now);
@@ -287,7 +286,7 @@ static iib_link_set_entry_t* update_link_set(iib_base_entry_t *base_entry, nib_e
                     if (matches > 1) {
                         /* Multiple matching link tuples, delete the previous one */
                         if (matching_lt->last_status == IIB_LT_STATUS_SYM) {
-                            sec_thirteen_two(base_entry, matching_lt, now);
+                            update_nb_tuple_symmetry(base_entry, matching_lt, now);
                         }
                         rem_link_set_entry(base_entry, matching_lt);
                     }
@@ -305,7 +304,7 @@ static iib_link_set_entry_t* update_link_set(iib_base_entry_t *base_entry, nib_e
     if (matches > 1) {
         /* Multiple matching link tuples, reset the last one for reuse */
         if (matching_lt->last_status == IIB_LT_STATUS_SYM) {
-            sec_thirteen_two(base_entry, matching_lt, now);
+            update_nb_tuple_symmetry(base_entry, matching_lt, now);
         }
         reset_link_set_entry(matching_lt, now, val_time);
     }
@@ -338,7 +337,10 @@ static iib_link_set_entry_t* update_link_set(iib_base_entry_t *base_entry, nib_e
     /* Set values dependent on link status */
     if (sym) {
         if (matching_lt->last_status != IIB_LT_STATUS_SYM) {
-            sec_thirteen_one(matching_lt);
+            /* Set corresponding neighbor tuple to symmetric (Section 13.1 of RFC 6130) */
+            if (matching_lt->nb_elt) {
+                nib_set_nb_entry_sym(matching_lt->nb_elt);
+            }
         }
         matching_lt->sym_time = timex_add(*now, v_time);
         matching_lt->last_status = IIB_LT_STATUS_SYM;
@@ -347,7 +349,7 @@ static iib_link_set_entry_t* update_link_set(iib_base_entry_t *base_entry, nib_e
         matching_lt->sym_time.microseconds = 0;
         matching_lt->sym_time.seconds = 0;
         if (matching_lt->last_status == IIB_LT_STATUS_SYM) {
-            sec_thirteen_two(base_entry, matching_lt, now);
+            update_nb_tuple_symmetry(base_entry, matching_lt, now);
         }
         if (get_tuple_status(matching_lt, now) == IIB_LT_STATUS_HEARD) {
             matching_lt->last_status = IIB_LT_STATUS_HEARD;
@@ -386,20 +388,20 @@ static void wr_update_ls_status(iib_base_entry_t *base_entry,
     if (timex_cmp(ls_elt->exp_time, *now) != 1) {
         /* Entry expired and has to be removed */
         if (ls_elt->last_status == IIB_LT_STATUS_SYM) {
-            sec_thirteen_two(base_entry, ls_elt, now);
+            update_nb_tuple_symmetry(base_entry, ls_elt, now);
         }
-        sec_thirteen_three(ls_elt, now);
+        rem_not_heard_nb_tuple(ls_elt, now);
         rem_link_set_entry(base_entry, ls_elt);
     }
     else if ((ls_elt->last_status == IIB_LT_STATUS_SYM)
             && (timex_cmp(ls_elt->sym_time, *now) != 1)) {
         /* Status changed from SYMMETRIC to HEARD */
-        sec_thirteen_two(base_entry, ls_elt, now);
+        update_nb_tuple_symmetry(base_entry, ls_elt, now);
         ls_elt->last_status = IIB_LT_STATUS_HEARD;
 
         if (timex_cmp(ls_elt->heard_time, *now) != 1) {
             /* New status is LOST (equals IIB_LT_STATUS_UNKNOWN) */
-            sec_thirteen_three(ls_elt, now);
+            rem_not_heard_nb_tuple(ls_elt, now);
             ls_elt->nb_elt = NULL;
             ls_elt->last_status = IIB_LT_STATUS_UNKNOWN;
         }
@@ -407,7 +409,7 @@ static void wr_update_ls_status(iib_base_entry_t *base_entry,
     else if ((ls_elt->last_status == IIB_LT_STATUS_HEARD)
             && (timex_cmp(ls_elt->heard_time, *now) != 1)) {
         /* Status changed from HEARD to LOST (equals IIB_LT_STATUS_UNKNOWN) */
-        sec_thirteen_three(ls_elt, now);
+        rem_not_heard_nb_tuple(ls_elt, now);
         ls_elt->nb_elt = NULL;
         ls_elt->last_status = IIB_LT_STATUS_UNKNOWN;
     }
@@ -594,23 +596,12 @@ static void rem_two_hop_entry(iib_base_entry_t *base_entry, iib_two_hop_set_entr
 }
 
 /**
- * Set the corresponding neighbor tuple of a given link tuple to symmetric
- * Implements section 13.1 of RFC 6130
- */
-static void sec_thirteen_one(iib_link_set_entry_t *ls_entry)
-{
-    if (ls_entry->nb_elt) {
-        nib_set_nb_entry_sym(ls_entry->nb_elt);
-    }
-}
-
-/**
  * Remove all corresponding two hop entries for a given link tuple that lost symmetry status.
  * Additionally reset the neighbor tuple's symmmetry flag (for the neighbor tuple this link
  * tuple is represented in), if no more corresponding symmetric link tuples are left.
  * Implements section 13.2 of RFC 6130
  */
-static void sec_thirteen_two(iib_base_entry_t *base_entry,
+static void update_nb_tuple_symmetry(iib_base_entry_t *base_entry,
         iib_link_set_entry_t *ls_entry, timex_t *now)
 {
     iib_base_entry_t *base_tmp;
@@ -645,7 +636,7 @@ static void sec_thirteen_two(iib_base_entry_t *base_entry,
  * Remove a neighbor tuple if no more corresponding heard link tuples are left
  * Implements section 13.3 of RFC 6130
  */
-static void sec_thirteen_three(iib_link_set_entry_t *ls_entry, timex_t *now)
+static void rem_not_heard_nb_tuple(iib_link_set_entry_t *ls_entry, timex_t *now)
 {
     iib_base_entry_t *base_tmp;
     iib_link_set_entry_t *ls_tmp;
