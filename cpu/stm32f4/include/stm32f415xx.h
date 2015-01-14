@@ -78,6 +78,11 @@
   * @{
   */
 
+ typedef enum {DISABLE = 0, ENABLE = !DISABLE} FunctionalState;
+ typedef enum {RESET = 0, SET = !RESET} FlagStatus, ITStatus;
+ typedef enum {ERROR = 0, SUCCESS = !ERROR} ErrorStatus;
+
+
 /**
  * @brief STM32F4XX Interrupt Number Definition, according to the selected device
  *        in @ref Library_configuration_section
