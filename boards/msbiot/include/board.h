@@ -63,6 +63,14 @@ typedef uint8_t radio_packet_length_t;
 /** @} */
 
 /**
+ * @name Define UART device and baudrate for stdio
+ * @{
+ */
+#define BEEPER_PWM          PWM_0
+#define BEEPER_CHANNEL      (0)
+/** @} */
+
+/**
  * @name LED pin definitions
  * @{
  */

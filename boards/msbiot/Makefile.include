@@ -51,7 +51,7 @@ export LINKFLAGS += -specs=nano.specs -lc -lnosys
 endif
 
 # export board specific includes to the global includes-listing
-export INCLUDES += -I$(RIOTBOARD)/$(BOARD)/include
+export INCLUDES += -I$(RIOTBOARD)/$(BOARD)/include -I$(RIOTBOARD)/$(BOARD)/drivers/include
 
 ifneq (,$(filter defaulttransceiver,$(USEMODULE)))
     USEMODULE += cc110x

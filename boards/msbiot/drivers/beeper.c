@@ -18,9 +18,30 @@
  * @}
  */
 
-#include "periph_conf.h"
+#include "board.h"
 #include "periph/pwm.h"
+#include "vtimer.h"
 
-void msbiot_beeper_init(void)
+void msbiot_beeper_init(unsigned int frequency, unsigned int resolution)
 {
+    pwm_init(PWM_0, PWM_LEFT, frequency, resolution);
+    pwm_set(BEEPER_PWM, BEEPER_CHANNEL, 4);
+    pwm_stop(PWM_0);
+}
+
+void beep(uint32_t milliseconds)
+{
+    pwm_start(PWM_0);
+    vtimer_usleep(milliseconds * 1000);
+    pwm_stop(PWM_0);
+}
+
+void msbiot_beeper_start(void)
+{
+    pwm_start(PWM_0);
+}
+
+void msbiot_beeper_stop(void)
+{
+    pwm_stop(PWM_0);
 }
