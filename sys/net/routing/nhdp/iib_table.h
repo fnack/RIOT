@@ -181,6 +181,10 @@ void iib_process_metric_pckt(iib_link_set_entry_t *ls_entry, uint32_t metric_out
  */
 void iib_process_metric_refresh(void);
 
+int iib_count_link_set(void);
+
+int iib_count_th_set(void);
+
 #ifdef __cplusplus
 }
 #endif

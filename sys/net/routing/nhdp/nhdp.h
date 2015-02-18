@@ -200,6 +200,10 @@ int nhdp_register_non_manet_if(kernel_pid_t if_pid, uint8_t *addr, size_t addr_s
  */
 int nhdp_add_address(kernel_pid_t if_pid, uint8_t *addr, size_t addr_size, uint8_t addr_type);
 
+void nhdp_print_last_packet(void);
+
+void nhdp_print_state(void);
+
 #ifdef __cplusplus
 }
 #endif

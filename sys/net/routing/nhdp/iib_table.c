@@ -348,6 +348,30 @@ void iib_process_metric_refresh(void)
 #endif
 }
 
+int iib_count_link_set(void)
+{
+    iib_link_set_entry_t *tmp;
+    int counter = 0;
+
+    if (iib_base_entry_head != NULL) {
+        LL_COUNT(iib_base_entry_head->link_set_head, tmp, counter);
+    }
+
+    return counter;
+}
+
+int iib_count_th_set(void)
+{
+    iib_two_hop_set_entry_t *tmp;
+    int counter = 0;
+
+    if (iib_base_entry_head != NULL) {
+        LL_COUNT(iib_base_entry_head->two_hop_set_head, tmp, counter);
+    }
+
+    return counter;
+}
+
 
 /*------------------------------------------------------------------------------------*/
 /*                                Internal functions                                  */

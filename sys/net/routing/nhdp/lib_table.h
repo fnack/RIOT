@@ -81,6 +81,8 @@ void lib_fill_wr_addresses(kernel_pid_t if_pid, struct rfc5444_writer *wr);
  */
 uint8_t lib_is_reg_addr(kernel_pid_t if_pid, nhdp_addr_t *addr);
 
+int lib_count_local_interface_set(void);
+
 #ifdef __cplusplus
 }
 #endif

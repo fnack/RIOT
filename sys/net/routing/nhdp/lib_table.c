@@ -157,6 +157,15 @@ uint8_t lib_is_reg_addr(kernel_pid_t if_pid, nhdp_addr_t *addr)
     return 0;
 }
 
+int lib_count_local_interface_set(void)
+{
+    lib_entry_t *tmp;
+    int counter;
+
+    LL_COUNT(lib_entry_head, tmp, counter);
+    return counter;
+}
+
 
 /*------------------------------------------------------------------------------------*/
 /*                                Internal functions                                  */

@@ -26,6 +26,7 @@
 #include "mutex.h"
 
 #include "rfc5444/rfc5444_writer.h"
+#include "rfc5444/rfc5444_print.h"
 
 #include "lib_table.h"
 #include "iib_table.h"
@@ -51,6 +52,10 @@ static int sock_rcv;
 static vtimer_t metric_timer;
 static timex_t metric_interval;
 #endif
+
+struct autobuf _hexbuf;
+char last_packet_buffer[NHDP_MAX_RFC5444_PACKET_SZ];
+size_t last_packet_length;
 
 /* Internal function prototypes */
 static void *_nhdp_runner(void *arg __attribute__((unused)));
@@ -228,6 +233,28 @@ int nhdp_add_address(kernel_pid_t if_pid, uint8_t *addr, size_t addr_size, uint8
     return result;
 }
 
+void nhdp_print_last_packet(void)
+{
+    /* Generate hexdump of packet */
+    abuf_hexdump(&_hexbuf, "\t", last_packet_buffer, last_packet_length);
+    rfc5444_print_direct(&_hexbuf, last_packet_buffer, last_packet_length);
+    /* Print hexdump */
+    printf("Packet size: %" PRIu16 "\n", last_packet_length);
+    printf("%s", abuf_getptr(&_hexbuf));
+    abuf_free(&_hexbuf);
+}
+
+void nhdp_print_state(void)
+{
+    printf("NHDP Information base state\n");
+    printf("+----------------------------------------+\n");
+    printf("Entries in Local Interface Set:\t%d\n", lib_count_local_interface_set());
+    printf("Entries in Link Set:\t\t%d\n", iib_count_link_set());
+    printf("Entries in 2-Hop Set:\t\t%d\n", iib_count_th_set());
+    printf("Entries in Neighbor Set:\t%d\n", nib_count_neighbor_set());
+    printf("Entries in Lost Neighbor Set:\t%d\n", nib_count_lost_neighbor_set());
+}
+
 /*------------------------------------------------------------------------------------*/
 /*                                Internal functions                                  */
 /*------------------------------------------------------------------------------------*/
@@ -328,5 +355,7 @@ static void write_packet(struct rfc5444_writer *wr __attribute__((unused)),
                          struct rfc5444_writer_target *iface __attribute__((unused)),
                          void *buffer, size_t length)
 {
+    memcpy(last_packet_buffer, buffer, length);
+    last_packet_length = length;
     socket_base_sendto(sock_rcv, buffer, length, 0, &sa_bcast, sizeof(sa_bcast));
 }

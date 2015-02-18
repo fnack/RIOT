@@ -189,6 +189,23 @@ void nib_reset_nb_entry_sym(nib_entry_t *nib_entry, timex_t *now)
     }
 }
 
+int nib_count_neighbor_set(void)
+{
+    nib_entry_t *tmp;
+    int counter;
+
+    LL_COUNT(nib_entry_head, tmp, counter);
+    return counter;
+}
+
+int nib_count_lost_neighbor_set(void)
+{
+    nib_lost_address_entry_t *tmp;
+    int counter;
+
+    LL_COUNT(nib_lost_address_entry_head, tmp, counter);
+    return counter;
+}
 
 /*------------------------------------------------------------------------------------*/
 /*                                Internal functions                                  */
