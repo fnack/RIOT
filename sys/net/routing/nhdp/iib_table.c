@@ -224,6 +224,30 @@ void iib_propagate_nb_entry_change(nib_entry_t *old_entry, nib_entry_t *new_entr
     }
 }
 
+int iib_count_link_set(void)
+{
+    iib_link_set_entry_t *tmp;
+    int counter = 0;
+
+    if (iib_base_entry_head != NULL) {
+        LL_COUNT(iib_base_entry_head->link_set_head, tmp, counter);
+    }
+
+    return counter;
+}
+
+int iib_count_th_set(void)
+{
+    iib_two_hop_set_entry_t *tmp;
+    int counter = 0;
+
+    if (iib_base_entry_head != NULL) {
+        LL_COUNT(iib_base_entry_head->two_hop_set_head, tmp, counter);
+    }
+
+    return counter;
+}
+
 
 /*------------------------------------------------------------------------------------*/
 /*                                Internal functions                                  */

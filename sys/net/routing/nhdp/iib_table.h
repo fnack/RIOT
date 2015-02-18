@@ -143,6 +143,10 @@ void iib_update_lt_status(timex_t *now);
  */
 void iib_propagate_nb_entry_change(nib_entry_t *old_entry, nib_entry_t *new_entry);
 
+int iib_count_link_set(void);
+
+int iib_count_th_set(void);
+
 #ifdef __cplusplus
 }
 #endif

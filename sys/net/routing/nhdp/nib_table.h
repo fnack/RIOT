@@ -99,6 +99,10 @@ void nib_set_nb_entry_sym(nib_entry_t *nib_entry);
  */
 void nib_reset_nb_entry_sym(nib_entry_t *nib_entry, timex_t *now);
 
+int nib_count_neighbor_set(void);
+
+int nib_count_lost_neighbor_set(void);
+
 #ifdef __cplusplus
 }
 #endif
