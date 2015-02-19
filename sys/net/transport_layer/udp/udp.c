@@ -79,7 +79,7 @@ void *udp_packet_handler(void *arg)
                 msg_send_receive(&m_send_udp, &m_recv_udp, udp_socket->recv_pid);
             }
             else {
-                printf("Dropped UDP Message because no thread ID was found for delivery!\n");
+                //printf("Dropped UDP Message because no thread ID was found for delivery!\n");
             }
         }
         else {
