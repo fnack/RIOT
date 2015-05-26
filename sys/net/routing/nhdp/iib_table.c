@@ -284,20 +284,17 @@ void iib_process_metric_pckt(iib_link_set_entry_t *ls_entry, uint32_t metric_out
                 ls_entry->dat_received[0] = 1;
                 ls_entry->dat_total[0] = 1;
             }
-            else {
-                /* Don't add values to the queue for duplicate packets */
-                if (seq_no != ls_entry->last_seq_no) {
-                    uint16_t seq_diff;
-                    if (seq_no < ls_entry->last_seq_no) {
-                        seq_diff = (uint16_t) ((((uint32_t) seq_no) + 0xFFFF) - ls_entry->last_seq_no);
-                    }
-                    else {
-                        seq_diff = seq_no - ls_entry->last_seq_no;
-                    }
-                    ls_entry->dat_total[0] +=
-                            (seq_diff > NHDP_SEQNO_RESTART_DETECT) ? 1 : seq_diff;
-                    ls_entry->dat_received[0]++;
+            /* Don't add values to the queue for duplicate packets */
+            else if (seq_no != ls_entry->last_seq_no) {
+                uint16_t seq_diff;
+                if (seq_no < ls_entry->last_seq_no) {
+                    seq_diff = (uint16_t) ((((uint32_t) seq_no) + 0xFFFF) - ls_entry->last_seq_no);
                 }
+                else {
+                    seq_diff = seq_no - ls_entry->last_seq_no;
+                }
+                ls_entry->dat_total[0] += (seq_diff > NHDP_SEQNO_RESTART_DETECT) ? 1 : seq_diff;
+                ls_entry->dat_received[0]++;
             }
 
             ls_entry->last_seq_no = seq_no;
@@ -836,7 +833,7 @@ static uint16_t queue_sum(uint8_t *queue)
 {
     uint16_t sum = 0;
 
-    for (int i=0; i < NHDP_Q_MEM_LENGTH; i++) {
+    for (int i = 0; i < NHDP_Q_MEM_LENGTH; i++) {
         sum += queue[i];
     }
 
@@ -855,7 +852,7 @@ static void queue_rem(uint8_t *queue)
     queue[0] = 0;
 
     /* Shift elements */
-    for (int i=1; i < NHDP_Q_MEM_LENGTH; i++) {
+    for (int i = 1; i < NHDP_Q_MEM_LENGTH; i++) {
         temp = queue[i];
         queue[i] = prev_value;
         prev_value = temp;

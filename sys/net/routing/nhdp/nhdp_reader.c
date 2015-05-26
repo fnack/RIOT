@@ -222,15 +222,14 @@ _nhdp_blocktlv_address_cb(struct rfc5444_reader_tlvblock_context *cont)
             }
         }
 
-        if (lt_metric_val == NHDP_METRIC_UNKNOWN) {
+        if (lt_metric_val == NHDP_METRIC_UNKNOWN
+            && _nhdp_addr_tlvs[RFC5444_ADDRTLV_LINK_METRIC].tlv != NULL) {
             /* Determine our outgoing link metric value to the originator interface */
-            if (_nhdp_addr_tlvs[RFC5444_ADDRTLV_LINK_METRIC].tlv) {
-                uint16_t metric_enc = *((uint16_t*)_nhdp_addr_tlvs[RFC5444_ADDRTLV_LINK_METRIC]
-                                                          .tlv->single_value);
-                if (metric_enc & NHDP_KD_LM_INC) {
-                    /* Incoming metric value at the neighbor if is outgoing value for our if */
-                    lt_metric_val = rfc5444_metric_decode(metric_enc);
-                }
+            uint16_t metric_enc = *((uint16_t*)_nhdp_addr_tlvs[RFC5444_ADDRTLV_LINK_METRIC]
+                                                      .tlv->single_value);
+            if (metric_enc & NHDP_KD_LM_INC) {
+                /* Incoming metric value at the neighbor if is outgoing value for our if */
+                lt_metric_val = rfc5444_metric_decode(metric_enc);
             }
         }
 

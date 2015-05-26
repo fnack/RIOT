@@ -36,7 +36,7 @@ extern "C" {
 #define NHDP_LMT_DAT                (165)
 
 /** @brief Used metric (change to switch to another metric type) */
-#define NHDP_METRIC                 NHDP_LMT_HOP_COUNT
+#define NHDP_METRIC                 (NHDP_LMT_HOP_COUNT)
 
 /** @brief Randomly chosen number for NHDP's metric timer event */
 #define NHDP_METRIC_TIMER           (5445)
