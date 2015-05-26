@@ -13,6 +13,11 @@
  * @file
  * @brief       Macros for NHDP metric computation
  *
+ * The used infrastructure for exchanging metric values is based on the rules defined in the RFC
+ * of <a href="https://tools.ietf.org/html/rfc7181">OLSRv2</a>. The calculations for the
+ * Directional Airtime Metric (DAT) are based on
+ * <a href="https://tools.ietf.org/html/draft-ietf-manet-olsrv2-dat-metric-05">DAT Draft v5</a>.
+ *
  * @author      Fabian Nack <nack@inf.fu-berlin.de>
  */
 
