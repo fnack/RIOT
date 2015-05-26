@@ -238,6 +238,7 @@ void iib_process_metric_msg(iib_link_set_entry_t *ls_entry, uint64_t int_time)
 {
 #if (NHDP_METRIC == NHDP_LMT_HOP_COUNT)
     /* Hop metric value for an existing direct link is always 1 */
+    (void)int_time;
     ls_entry->metric_in = 1;
     ls_entry->metric_out = 1;
     if (ls_entry->nb_elt) {
@@ -257,6 +258,8 @@ void iib_process_metric_msg(iib_link_set_entry_t *ls_entry, uint64_t int_time)
     }
 #else
     /* NHDP_METRIC is not set properly */
+    (void)ls_entry;
+    (void)int_time;
     DEBUGF("[WARNING] Unknown NHDP_METRIC setting\n");
 #endif
 }
@@ -265,6 +268,9 @@ void iib_process_metric_pckt(iib_link_set_entry_t *ls_entry, uint32_t metric_out
 {
 #if (NHDP_METRIC == NHDP_LMT_HOP_COUNT)
     /* Nothing to do here */
+    (void)ls_entry;
+    (void)metric_out;
+    (void)seq_no;
 #elif (NHDP_METRIC == NHDP_LMT_DAT)
     /* Metric packet processing */
     if (ls_entry->last_seq_no == 0) {
@@ -323,6 +329,9 @@ void iib_process_metric_pckt(iib_link_set_entry_t *ls_entry, uint32_t metric_out
     ls_entry->metric_out = metric_out;
 #else
     /* NHDP_METRIC is not set properly */
+    (void)ls_entry;
+    (void)metric_out;
+    (void)seq_no;
     DEBUGF("[WARNING] Unknown NHDP_METRIC setting\n");
 #endif
 }
