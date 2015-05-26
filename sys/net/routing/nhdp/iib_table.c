@@ -236,131 +236,107 @@ void iib_propagate_nb_entry_change(nib_entry_t *old_entry, nib_entry_t *new_entr
 
 void iib_process_metric_msg(iib_link_set_entry_t *ls_entry, uint64_t int_time)
 {
-    switch (NHDP_METRIC) {
 #if (NHDP_METRIC == NHDP_LMT_HOP_COUNT)
-        case NHDP_LMT_HOP_COUNT:
-            /* Hop metric value for an existing direct link is always 1 */
-            ls_entry->metric_in = 1;
-            ls_entry->metric_out = 1;
-            if (ls_entry->nb_elt) {
-                ls_entry->nb_elt->metric_in = 1;
-                ls_entry->nb_elt->metric_out = 1;
-            }
-            break;
-#endif
-#if (NHDP_METRIC == NHDP_LMT_DAT)
-        case NHDP_LMT_DAT:
-            /* Process required DAT metric steps */
-            ls_entry->hello_interval = rfc5444_timetlv_encode(int_time);
-            if (ls_entry->last_seq_no == 0) {
-                timex_t now, i_time;
-                vtimer_now(&now);
-                i_time = timex_from_uint64(int_time * MS_IN_USEC * DAT_HELLO_TIMEOUT_FACTOR);
-                ls_entry->dat_received[0]++;
-                ls_entry->dat_total[0]++;
-                ls_entry->dat_time = timex_add(now, i_time);
-            }
-            break;
-#endif
-        default:
-            /* NHDP_METRIC is not set properly */
-            DEBUGF("[WARNING] Unknown NHDP_METRIC setting\n");
-            break;
+    /* Hop metric value for an existing direct link is always 1 */
+    ls_entry->metric_in = 1;
+    ls_entry->metric_out = 1;
+    if (ls_entry->nb_elt) {
+        ls_entry->nb_elt->metric_in = 1;
+        ls_entry->nb_elt->metric_out = 1;
     }
+#elif (NHDP_METRIC == NHDP_LMT_DAT)
+    /* Process required DAT metric steps */
+    ls_entry->hello_interval = rfc5444_timetlv_encode(int_time);
+    if (ls_entry->last_seq_no == 0) {
+        timex_t now, i_time;
+        vtimer_now(&now);
+        i_time = timex_from_uint64(int_time * MS_IN_USEC * DAT_HELLO_TIMEOUT_FACTOR);
+        ls_entry->dat_received[0]++;
+        ls_entry->dat_total[0]++;
+        ls_entry->dat_time = timex_add(now, i_time);
+    }
+#else
+    /* NHDP_METRIC is not set properly */
+    DEBUGF("[WARNING] Unknown NHDP_METRIC setting\n");
+#endif
 }
 
 void iib_process_metric_pckt(iib_link_set_entry_t *ls_entry, uint32_t metric_out, uint16_t seq_no)
 {
-    switch (NHDP_METRIC) {
 #if (NHDP_METRIC == NHDP_LMT_HOP_COUNT)
-        case NHDP_LMT_HOP_COUNT:
-            /* Nothing to do here */
-            break;
-#endif
-#if (NHDP_METRIC == NHDP_LMT_DAT)
-        case NHDP_LMT_DAT:
-            /* Metric packet processing */
-            if (ls_entry->last_seq_no == 0) {
-                ls_entry->dat_received[0] = 1;
-                ls_entry->dat_total[0] = 1;
-            }
-            /* Don't add values to the queue for duplicate packets */
-            else if (seq_no != ls_entry->last_seq_no) {
-                uint16_t seq_diff;
-                if (seq_no < ls_entry->last_seq_no) {
-                    seq_diff = (uint16_t) ((((uint32_t) seq_no) + 0xFFFF) - ls_entry->last_seq_no);
-                }
-                else {
-                    seq_diff = seq_no - ls_entry->last_seq_no;
-                }
-                ls_entry->dat_total[0] += (seq_diff > NHDP_SEQNO_RESTART_DETECT) ? 1 : seq_diff;
-                ls_entry->dat_received[0]++;
-            }
+    /* Nothing to do here */
+#elif (NHDP_METRIC == NHDP_LMT_DAT)
+    /* Metric packet processing */
+    if (ls_entry->last_seq_no == 0) {
+        ls_entry->dat_received[0] = 1;
+        ls_entry->dat_total[0] = 1;
+    }
+    /* Don't add values to the queue for duplicate packets */
+    else if (seq_no != ls_entry->last_seq_no) {
+        uint16_t seq_diff;
+        if (seq_no < ls_entry->last_seq_no) {
+            seq_diff = (uint16_t) ((((uint32_t) seq_no) + 0xFFFF) - ls_entry->last_seq_no);
+        }
+        else {
+            seq_diff = seq_no - ls_entry->last_seq_no;
+        }
+        ls_entry->dat_total[0] += (seq_diff > NHDP_SEQNO_RESTART_DETECT) ? 1 : seq_diff;
+        ls_entry->dat_received[0]++;
+    }
 
-            ls_entry->last_seq_no = seq_no;
-            ls_entry->lost_hellos = 0;
+    ls_entry->last_seq_no = seq_no;
+    ls_entry->lost_hellos = 0;
 
-            if (ls_entry->hello_interval != 0) {
-                timex_t now, i_time;
-                vtimer_now(&now);
-                i_time = timex_from_uint64(rfc5444_timetlv_decode(ls_entry->hello_interval)
-                        * MS_IN_USEC * DAT_HELLO_TIMEOUT_FACTOR);
-                ls_entry->dat_time = timex_add(now, i_time);
-            }
+    if (ls_entry->hello_interval != 0) {
+        timex_t now, i_time;
+        vtimer_now(&now);
+        i_time = timex_from_uint64(rfc5444_timetlv_decode(ls_entry->hello_interval)
+                * MS_IN_USEC * DAT_HELLO_TIMEOUT_FACTOR);
+        ls_entry->dat_time = timex_add(now, i_time);
+    }
 
-            /* Refresh metric value for link tuple and corresponding neighbor tuple */
-            if (ls_entry->nb_elt) {
-                if ((metric_out <= ls_entry->nb_elt->metric_out) ||
-                        (ls_entry->nb_elt->metric_out == NHDP_METRIC_UNKNOWN)) {
-                    /* Better value, use it also for your neighbor */
-                    ls_entry->nb_elt->metric_out = metric_out;
-                }
-                else if (ls_entry->metric_out == ls_entry->nb_elt->metric_out){
-                    /* The corresponding neighbor tuples metric needs to be updated */
-                    iib_base_entry_t *base_elt;
-                    iib_link_set_entry_t *ls_elt;
-                    ls_entry->nb_elt->metric_out = metric_out;
-                    LL_FOREACH(iib_base_entry_head, base_elt) {
-                        LL_FOREACH(base_elt->link_set_head, ls_elt) {
-                            if ((ls_elt->nb_elt == ls_entry->nb_elt) && (ls_elt != ls_entry)) {
-                                if (ls_elt->metric_out < ls_entry->nb_elt->metric_out) {
-                                    /* Smaller DAT value is better */
-                                    ls_entry->nb_elt->metric_out = ls_elt->metric_out;
-                                }
-                                break;
-                            }
+    /* Refresh metric value for link tuple and corresponding neighbor tuple */
+    if (ls_entry->nb_elt) {
+        if ((metric_out <= ls_entry->nb_elt->metric_out) ||
+                (ls_entry->nb_elt->metric_out == NHDP_METRIC_UNKNOWN)) {
+            /* Better value, use it also for your neighbor */
+            ls_entry->nb_elt->metric_out = metric_out;
+        }
+        else if (ls_entry->metric_out == ls_entry->nb_elt->metric_out){
+            /* The corresponding neighbor tuples metric needs to be updated */
+            iib_base_entry_t *base_elt;
+            iib_link_set_entry_t *ls_elt;
+            ls_entry->nb_elt->metric_out = metric_out;
+            LL_FOREACH(iib_base_entry_head, base_elt) {
+                LL_FOREACH(base_elt->link_set_head, ls_elt) {
+                    if ((ls_elt->nb_elt == ls_entry->nb_elt) && (ls_elt != ls_entry)) {
+                        if (ls_elt->metric_out < ls_entry->nb_elt->metric_out) {
+                            /* Smaller DAT value is better */
+                            ls_entry->nb_elt->metric_out = ls_elt->metric_out;
                         }
+                        break;
                     }
                 }
             }
-            ls_entry->metric_out = metric_out;
-            break;
-#endif
-        default:
-            /* NHDP_METRIC is not set properly */
-            DEBUGF("[WARNING] Unknown NHDP_METRIC setting\n");
-            break;
+        }
     }
+    ls_entry->metric_out = metric_out;
+#else
+    /* NHDP_METRIC is not set properly */
+    DEBUGF("[WARNING] Unknown NHDP_METRIC setting\n");
+#endif
 }
 
 void iib_process_metric_refresh(void)
 {
-    switch (NHDP_METRIC) {
 #if (NHDP_METRIC == NHDP_LMT_HOP_COUNT)
-        case NHDP_LMT_HOP_COUNT:
-            /* Nothing to do here */
-            break;
+    /* Nothing to do here */
+#elif (NHDP_METRIC == NHDP_LMT_DAT)
+    dat_metric_refresh();
+#else
+    /* NHDP_METRIC is not set properly */
+    DEBUGF("[WARNING] Unknown NHDP_METRIC setting\n");
 #endif
-#if (NHDP_METRIC == NHDP_LMT_DAT)
-        case NHDP_LMT_DAT:
-            dat_metric_refresh();
-            break;
-#endif
-        default:
-            /* NHDP_METRIC is not set properly */
-            DEBUGF("[WARNING] Unknown NHDP_METRIC setting\n");
-            break;
-    }
 }
 
 
